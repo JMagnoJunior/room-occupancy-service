@@ -4,27 +4,28 @@ import magnojr.com.de.roomoccupancyservice.dtos.RevenueSimulationResult;
 import magnojr.com.de.roomoccupancyservice.dtos.RoomsAvailableDTO;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.PriorityQueue;
 
 @Service
 public class RevenueCalculatorService {
 
     public RevenueSimulationResult simulateRevenue(RoomsAvailableDTO roomsAvailableDTO) {
-        return new RevenueSimulationResult();
+        List<Integer> defaultClients = Arrays.asList(23, 45, 155, 374, 22, 99, 100, 101, 115, 209);
+
+        return process(roomsAvailableDTO.getFreePremiumRooms(),
+                roomsAvailableDTO.getFreeEconomyRooms(),
+                defaultClients);
     }
 
-    public static void main(String[] args) {
-        // test solution
-        List<Integer> clients = Arrays.asList(23, 45, 155, 374, 22, 99, 100, 101, 115, 209);
-        clients.sort(Comparator.reverseOrder());
+    private RevenueSimulationResult process(final int premiumRooms, final int economicRooms, final List<Integer> clients) {
 
-        int premiumRooms = 2;
-        int economicRooms = 7;
-        // build list of premium
         PriorityQueue<Integer> premiumClients = new PriorityQueue<>(Collections.reverseOrder());
         PriorityQueue<Integer> economicClients = new PriorityQueue<>(Collections.reverseOrder());
 
-        for (Integer client: clients) {
+        for (Integer client : clients) {
             if (client >= 100) {
                 premiumClients.add(client);
             } else {
@@ -32,24 +33,28 @@ public class RevenueCalculatorService {
             }
         }
 
-        int usagePremium = 0;
-        int removedElements = 0;
-
-        while (!premiumClients.isEmpty() && removedElements < premiumRooms) {
-            usagePremium += premiumClients.poll();
-            removedElements++;
+        int totalRevenueForPremiumRooms = 0;
+        int occupiedPremiumRooms = 0;
+        while (!premiumClients.isEmpty() && occupiedPremiumRooms < premiumRooms) {
+            totalRevenueForPremiumRooms += premiumClients.poll();
+            occupiedPremiumRooms++;
         }
 
-        int vacantPremiumRooms = premiumRooms - removedElements;
+        int vacantPremiumRooms = premiumRooms - occupiedPremiumRooms;
 
-        int usageEconomic = 0;
-        removedElements = 0;
-        while (!economicClients.isEmpty() && removedElements < economicRooms + vacantPremiumRooms) {
-            usageEconomic += economicClients.poll();
-            removedElements++;
+        int totalRevenueForEconomyRooms = 0;
+        int occupiedEconomyRooms = 0;
+        while (!economicClients.isEmpty() && occupiedEconomyRooms < economicRooms + vacantPremiumRooms) {
+            totalRevenueForEconomyRooms += economicClients.poll();
+            occupiedEconomyRooms++;
         }
 
-        System.out.println(usagePremium);
-        System.out.println(usageEconomic);
+        RevenueSimulationResult revenueSimulationResult = new RevenueSimulationResult();
+        revenueSimulationResult.setRoomUsagePremium(occupiedPremiumRooms);
+        revenueSimulationResult.setRoomUsageEconomy(occupiedEconomyRooms);
+        revenueSimulationResult.setTotalRevenueForPremiumRooms(totalRevenueForPremiumRooms);
+        revenueSimulationResult.setTotalRevenueForEconomyRooms(totalRevenueForEconomyRooms);
+        return revenueSimulationResult;
     }
+
 }
